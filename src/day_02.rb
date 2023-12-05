@@ -33,9 +33,9 @@ class Day02 < Day
 
   def result
     if enable_part_two
-      @records.map(&:power).sum
+      @records.sum(&:power)
     else
-      possible_games.map(&:id).sum
+      possible_games.sum(&:id)
     end
   end
 end

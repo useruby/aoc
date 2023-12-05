@@ -80,7 +80,7 @@ class Day03 < Day
 
         break if match.nil?
 
-        if (match.begin(0) - 1..match.end(0)).include?(star_position)
+        if (match.begin(0) - 1..match.end(0)).cover?(star_position)
           distance = [(star_position - match.begin(0)).abs, (star_position - match.end(0)).abs].min
           ratios << [match[0].to_i, distance]
         end
