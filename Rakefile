@@ -54,14 +54,15 @@ task :generate_day, [:number] do |_, args|
     require "\#{__dir__}/support"
 
     describe Day#{number} do
+      let(:input) do
+        [
+        ]
+      end
+
       describe 'part one' do
         subject { Day#{number}.new(input) }
 
         let(:result) { 1 }
-        let(:input) do
-          [
-          ]
-        end
 
         it_returns_correct_result
       end
@@ -70,10 +71,6 @@ task :generate_day, [:number] do |_, args|
         subject { Day#{number}.new(input, enable_part_two: true) }
 
         let(:result) { 2 }
-        let(:input) do
-          [
-          ]
-        end
 
         it_returns_correct_result
       end
