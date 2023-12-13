@@ -80,8 +80,8 @@ describe Day13 do
   describe 'part two' do
     subject { Day13.new(input, enable_part_two: true) }
 
-    let(:result) { 2 }
+    let(:result) { 400 }
 
-    # it_returns_correct_result
+    it_returns_correct_result
   end
 end

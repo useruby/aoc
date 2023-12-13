@@ -2,63 +2,55 @@
 
 class Day13 < Day
   def result
+    @errors_tolerance = enable_part_two ? 1 : 0
+
     load_patterns.sum { |pattern| reflection_score(pattern) }
   end
 
   private
 
   def reflection_score(pattern)
-    horizontal_length, horizontal_index = reflection_horizontal(pattern)
-    vertical_length, vertical_index = reflection_vertical(pattern)
+    reflection_line_index = reflection_horizontal(pattern)
+    return 100 * reflection_line_index unless reflection_line_index.nil?
 
-    result = if horizontal_length >= vertical_length
-      horizontal_index  * 100
-    else
-      vertical_index
-    end
-
-    # puts("result: #{result} horizontal: #{horizontal_length} vertical_length: #{vertical_length}")
-    # pattern.each { |line| puts(line) }
-    # puts('')
-
-    # result
+    reflection_vertical(pattern)
   end
 
   def reflection_horizontal(pattern)
-    previous_line = ''
-
-    reflection_lines = []
-    pattern.each_with_index do |line, index|
-      reflection_lines << index if previous_line == line
-
-      previous_line = line
+    (1...pattern.size).each do |line_index|
+      return line_index if acceptable_reflection_error?(pattern, line_index)
     end
 
-    return 0 if reflection_lines.empty?
+    nil
+  end
 
-    reflection_lengths = reflection_lines.map do |reflection_line|
-      pattern.size.times do |index|
-        next_line_index = reflection_line + index
-        previous_line_index = reflection_line - 1 - index
+  def acceptable_reflection_error?(pattern, line_index)
+    reflection_length = [line_index, pattern.size - line_index].min
 
-        next index if next_line_index >= pattern.size || previous_line_index < 0
-        break index if next_line_index >= pattern.size && previous_line_index < 0
-        break index if pattern[previous_line_index] != pattern[next_line_index]
+    errors =
+      ((line_index - reflection_length)...line_index).inject(0) do |error_count, reflection_line_a_index|
+        reflection_line_b_index = line_index + (line_index - reflection_line_a_index - 1)
+        error_count += errors(pattern[reflection_line_a_index], pattern[reflection_line_b_index])
+
+        return false if error_count > @errors_tolerance
+
+        error_count
       end
-    end
 
-    max_reflection_length = reflection_lengths.max
-
-    [max_reflection_length, reflection_lines[reflection_lengths.index(max_reflection_length)]]
+    errors == @errors_tolerance
   end
 
   def reflection_vertical(pattern)
     reflection_horizontal(turn_pattern(pattern))
   end
 
+  def errors(line_a, line_b)
+    line_a.chars.zip(line_b.chars).sum { |char_a, char_b| char_a == char_b ? 0 : 1 }
+  end
+
   # turn pattern clockwise for 90 degree
   def turn_pattern(pattern)
-    turned_pattern = Array.new(pattern.first.size) { String.new() }
+    turned_pattern = Array.new(pattern.first.size) { +'' }
 
     pattern.reverse.each_with_index do |line, char_index|
       line.chars.each_with_index do |char, line_index|
