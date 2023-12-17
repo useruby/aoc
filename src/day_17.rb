@@ -6,55 +6,60 @@ class Day17 < Day
   DIRECTIONS = [[0, 1], [0, -1], [1, 0], [-1, 0]].freeze
 
   def result
-    return 0 if enable_part_two
+    max_line_length = 3
+    turn_after = 1
 
-    nodes = [[0, 0, 0, 0, 0]] # row, column, delta row, delta column, line length
+    if enable_part_two
+      max_line_length = 10
+      turn_after = 4
+    end
+
+    nodes = [[0, 0, 0, 0]] # row, column, delta row, delta column
     visited_nodes = Set[]
     distances = { nodes.first => 0 }
 
     until nodes.empty?
       node = nodes.min { |node_a, node_b| distances[node_a] <=> distances[node_b] }
       nodes.delete(node)
-      row, column, direction_row, direction_column, line_length = node
+      row, column, direction_row, direction_column = node
       node_distance = distances[node]
 
       DIRECTIONS.each do |direction|
+        # same direction
+        next if direction == [direction_row, direction_column]
         # opposite direction
-        next if [direction_row * -1, direction_column * -1] == direction
+        next if direction == [direction_row * -1, direction_column * -1]
 
-        next_node_line_length = line_length
-        if direction == [direction_row, direction_column]
-          next_node_line_length += 1
+        (turn_after..max_line_length).each do |line_length|
+          position = [row + (direction.first * line_length), column + (direction.last * line_length)]
+          next unless on_grid?(*position)
 
-          next if next_node_line_length > 3
-        else
-          next_node_line_length = 1
+          next_node = [*position, *direction]
+          next if visited_nodes.include?(next_node)
+
+          distance = node_distance
+          line_length.times do |length|
+            distance += grid[row + (direction.first * (length + 1))][column + (direction.last * (length + 1))]
+          end
+
+          next_node_distance = distances[next_node]
+          distances[next_node] = distance if next_node_distance.nil? || next_node_distance > distance
+
+          nodes << next_node
         end
-
-        position = [row + direction.first, column + direction.last]
-        next unless on_grid?(*position)
-
-        next_node = [*position, *direction, next_node_line_length]
-        next if visited_nodes.include?(next_node)
-
-        distance = node_distance + grid[position[0]][position[1]]
-        next_node_distance = distances[next_node]
-        distances[next_node] = distance if next_node_distance.nil? || next_node_distance > distance
-
-        nodes << next_node
       end
 
       visited_nodes << node
     end
 
-    distances.select { |(row, column),| bottom_left?(row, column) }.values.min
+    distances.select { |(node_row, node_column),| bottom_left?(node_row, node_column) }.values.min
   end
 
   private
 
   def grid
-    @grid ||= @input.map.with_index do |line, row_index|
-      line.chars.map { |node| node.to_i }
+    @grid ||= @input.map.with_index do |line, _row_index|
+      line.chars.map(&:to_i)
     end
   end
 

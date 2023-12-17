@@ -32,8 +32,24 @@ describe Day17 do
   describe 'part two' do
     subject { Day17.new(input, enable_part_two: true) }
 
-    let(:result) { 0 }
+    let(:result) { 94 }
 
     it_returns_correct_result
+
+    describe 'another example' do
+      let(:input) do
+        %w[
+          111111111111
+          999999999991
+          999999999991
+          999999999991
+          999999999991
+        ]
+      end
+
+      let(:result) { 71 }
+
+      it_returns_correct_result
+    end
   end
 end
