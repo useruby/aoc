@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'debug'
 require 'minitest/autorun'
 
 require "#{__dir__}/../src/record.rb"
