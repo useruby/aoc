@@ -5,6 +5,88 @@ require 'set'
 class Day17 < Day
   DIRECTIONS = [[0, 1], [0, -1], [1, 0], [-1, 0]].freeze
 
+  class Node
+    STATIONARY_NODE = [0, 0].freeze
+
+    class << self
+      attr_accessor :distances, :grid
+
+      def [](*attrs)
+        new(*attrs)
+      end
+
+      def visited=(node)
+        @visited_nodes = Set[] if @visited_nodes.nil?
+        @visited_nodes << node.to_a
+      end
+
+      def visited?(node)
+        @visited_nodes.include?(node.to_a)
+      end
+
+      def reset
+        @visited_nodes = nil
+        @distances = nil
+      end
+    end
+
+    def initialize(row, column, velocity = STATIONARY_NODE)
+      @row = row
+      @column = column
+      @velocity = velocity
+    end
+
+    def <=>(other)
+      distance <=> other.distance
+    end
+
+    def distance
+      return if self.class.distances.nil?
+
+      self.class.distances[to_a]
+    end
+
+    def distance=(distance)
+      self.class.distances = {} if self.class.distances.nil?
+      self.class.distances[to_a] = distance
+    end
+
+    def same_direction?(value)
+      direction == value
+    end
+
+    def opposite_direction?(value)
+      direction.map { |item| item * -1 } == value
+    end
+
+    def direction
+      @velocity.map { |coordinate| coordinate.zero? ? 0 : coordinate / coordinate.abs }
+    end
+
+    def next(velocity)
+      self.class.new(@row + velocity.first, @column + velocity.last, velocity)
+    end
+
+    def visited?
+      self.class.visited?(self)
+    end
+
+    def value
+      self.class.grid[@row][@column]
+    end
+
+    def outside_grid?
+      @row.negative? ||
+        @column.negative? ||
+        @row >= self.class.grid.size ||
+        @column >= self.class.grid.first.size
+    end
+
+    def to_a
+      [@row, @column, *direction]
+    end
+  end
+
   def result
     max_line_length = 3
     turn_after = 1
@@ -14,60 +96,40 @@ class Day17 < Day
       turn_after = 4
     end
 
-    nodes = [[0, 0, 0, 0]] # row, column, delta row, delta column
-    visited_nodes = Set[]
-    distances = { nodes.first => 0 }
+    Node.reset
+    Node.grid = @input.map { |line| line.chars.map(&:to_i) }
+    nodes = [Node[0, 0]]
+    nodes.first.distance = 0
 
     until nodes.empty?
-      node = nodes.min { |node_a, node_b| distances[node_a] <=> distances[node_b] }
-      nodes.delete(node)
-      row, column, direction_row, direction_column = node
-      node_distance = distances[node]
+      node = nodes.min
+      Node.visited = nodes.delete(node)
 
       DIRECTIONS.each do |direction|
-        # same direction
-        next if direction == [direction_row, direction_column]
-        # opposite direction
-        next if direction == [direction_row * -1, direction_column * -1]
+        next if node.same_direction?(direction) || node.opposite_direction?(direction)
 
         (turn_after..max_line_length).each do |line_length|
-          position = [row + (direction.first * line_length), column + (direction.last * line_length)]
-          next unless on_grid?(*position)
+          next_node = node.next(direction.map { |coordinate| coordinate * line_length })
+          next if next_node.outside_grid? || next_node.visited?
 
-          next_node = [*position, *direction]
-          next if visited_nodes.include?(next_node)
+          distance =
+            line_length.times.sum do |length|
+              node.next(direction.map { |coordinate| coordinate * (length + 1) }).value
+            end + node.distance
 
-          distance = node_distance
-          line_length.times do |length|
-            distance += grid[row + (direction.first * (length + 1))][column + (direction.last * (length + 1))]
-          end
+          next_node.distance = distance if next_node.distance.nil? || next_node.distance > distance
 
-          next_node_distance = distances[next_node]
-          distances[next_node] = distance if next_node_distance.nil? || next_node_distance > distance
-
-          nodes << next_node
+          nodes << next_node if nodes.index { |queued_node| queued_node.to_a == next_node.to_a }.nil?
         end
       end
-
-      visited_nodes << node
     end
 
-    distances.select { |(node_row, node_column),| bottom_left?(node_row, node_column) }.values.min
+    Node.distances.select { |(node_row, node_column),| bottom_left?(node_row, node_column) }.values.min
   end
 
   private
 
-  def grid
-    @grid ||= @input.map.with_index do |line, _row_index|
-      line.chars.map(&:to_i)
-    end
-  end
-
-  def on_grid?(row, column)
-    row >= 0 && column >= 0 && row < grid.size && column < grid.first.size
-  end
-
   def bottom_left?(row, column)
-    row == grid.size - 1 && column == grid.first.size - 1
+    row == Node.grid.size - 1 && column == Node.grid.first.size - 1
   end
 end
