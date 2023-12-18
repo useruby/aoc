@@ -28,29 +28,13 @@ describe Day18 do
     let(:result) { 62 }
 
     it_returns_correct_result
-
-    # describe 'intersections' do
-    #   let(:input) do
-    #     [
-    #       '.............#..#......#.......#....',
-    #       '.............#..#......#####...###..',
-    #       '.............#..#..........#.....#..'
-    #     ]
-    #   end
-
-    #   it do
-    #     lagoon = subject.result
-
-    #     _(lagoon.send(:intersections, input[1], 1, 11)).must_equal(4)
-    #   end
-    # end
   end
 
   describe 'part two' do
     subject { Day18.new(input, enable_part_two: true) }
 
-    let(:result) { 0 }
+    let(:result) { 952_408_144_115 }
 
-    # it_returns_correct_result
+    it_returns_correct_result
   end
 end
