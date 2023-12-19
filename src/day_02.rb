@@ -13,7 +13,7 @@ class Day02 < Day
         @payload.split(';').each do |item|
           item.split(',').each do |cube_stat|
             cube_count, cube_color = cube_stat.strip.split
-            send("#{cube_color}=", cube_count.to_i) if send(cube_color.to_s) < cube_count.to_i
+            send(:"#{cube_color}=", cube_count.to_i) if send(cube_color.to_s) < cube_count.to_i
           end
         end
       end

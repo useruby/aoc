@@ -4,7 +4,7 @@ require 'debug'
 require 'minitest/autorun'
 
 require "#{__dir__}/../src/record.rb"
-Dir["#{__dir__}/../src/day*.rb"].sort.each { |file| require file }
+Dir["#{__dir__}/../src/day*.rb"].each { |file| require file }
 
 module Minitest
   class Spec

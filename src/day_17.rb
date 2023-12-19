@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'set'
-
 class Day17 < Day
   DIRECTIONS = [[0, 1], [0, -1], [1, 0], [-1, 0]].freeze
 
