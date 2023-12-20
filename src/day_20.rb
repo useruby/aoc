@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Day20 < Day
-  class Component
+  class Block
     attr_reader :name, :outputs
 
     def initialize(name, outputs)
@@ -14,7 +14,7 @@ class Day20 < Day
     end
   end
 
-  class FlipFlop < Component
+  class FlipFlop < Block
     def initialize(*)
       super
 
@@ -34,28 +34,28 @@ class Day20 < Day
     end
   end
 
-  class Conjunction < Component
-    def inputs=(components_names)
-      @input_components = components_names.to_h { |name| [name, :low] }
+  class Conjunction < Block
+    def inputs=(blocks_names)
+      @input_blocks = blocks_names.to_h { |name| [name, :low] }
     end
 
-    def send_pulse(type, input_component)
-      @input_components[input_component.name] = type
+    def send_pulse(type, input_block)
+      @input_blocks[input_block.name] = type
 
       [
-        @input_components.values.all?(:high) ? :low : :high,
+        @input_blocks.values.all?(:high) ? :low : :high,
         outputs
       ]
     end
   end
 
-  class Broadcaster < Component
+  class Broadcaster < Block
     def initialize(_, outputs)
       super('broadcaster', outputs)
     end
   end
 
-  class ComponentBuilder
+  class BlockBuilder
     TYPES = {
       'broadcaster' => Broadcaster,
       '%' => FlipFlop,
@@ -71,7 +71,7 @@ class Day20 < Day
   RX = 'rx'
 
   def result
-    load_components
+    load_blocks
     init_inputs_of_conjunctions
 
     return result_part_two if enable_part_two
@@ -81,12 +81,11 @@ class Day20 < Day
   end
 
   def result_part_two
-    components = @components.values
-    @rx_input = components.find { |component| component.outputs.include?(RX) }.name
-    @visited = components
-               .select { |component| component.outputs.include?(@rx_input) }
-               .to_h { |component| [component.name, false] }
-    @clicks_counts = {}
+    blocks = @blocks.values
+    @rx_input = blocks.find { |block| block.outputs.include?(RX) }.name
+    @clicks_counts = blocks
+                     .select { |block| block.outputs.include?(@rx_input) }
+                     .to_h { |block| [block.name, 0] }
 
     (1..).each do |clicks|
       result = click_button(clicks:)
@@ -95,22 +94,23 @@ class Day20 < Day
   end
 
   def click_button(clicks: 1)
-    queue = [[@components['broadcaster'], :low, nil]]
+    queue = [[@blocks['broadcaster'], :low, nil]]
 
     until queue.empty?
-      component, pulse, input = queue.shift
+      block, pulse, input = queue.shift
 
       count_pulse(pulse)
 
-      next unless component.is_a?(Component)
+      next unless block.is_a?(Block)
 
-      result = count_clicks(component, pulse, input, clicks)
+      result = count_clicks(block, pulse, input, clicks)
       return result unless result.nil?
 
-      received_pulse, outputs = component.send_pulse(pulse, input)
-      outputs&.each do |component_name|
-        next_component = @components[component_name]
-        queue.push([next_component || component_name, received_pulse, component])
+      emitted_pulse, outputs = block.send_pulse(pulse, input)
+
+      outputs&.each do |block_name|
+        next_block = @blocks[block_name]
+        queue.push([next_block, emitted_pulse, block])
       end
     end
   end
@@ -123,41 +123,37 @@ class Day20 < Day
     @pulse_count[pulse == :low ? 0 : 1] += 1
   end
 
-  def count_clicks(component, pulse, input, clicks)
+  def count_clicks(block, pulse, input, clicks)
     return unless enable_part_two
 
-    return unless component.name == @rx_input && pulse == :high
+    return unless block.name == @rx_input && pulse == :high
 
-    @visited[input.name] = true
     @clicks_counts[input.name] = clicks
 
-    return unless @visited.values.all?(true)
+    return unless @clicks_counts.values.all?(&:positive?)
 
-    result = 1
-    @clicks_counts.each_value do |clicks_count|
-      result *= clicks_count / result.gcd(clicks_count)
+    @clicks_counts.values.inject(1) do |result, clicks_count|
+      result * clicks_count / result.gcd(clicks_count)
     end
-
-    result
   end
 
-  def load_components
-    @components = @input.to_h do |line|
+  def load_blocks
+    @blocks = @input.to_h do |line|
       label, outputs = line.split(' -> ')
-      component = ComponentBuilder.build(label, outputs.split(',').map(&:strip))
-      [component.name, component]
+      block = BlockBuilder.build(label, outputs.split(',').map(&:strip))
+      [block.name, block]
     end
   end
 
   def init_inputs_of_conjunctions
-    @components
+    @blocks
       .values
-      .select { |component| component.is_a?(Conjunction) }
+      .select { |block| block.is_a?(Conjunction) }
       .each do |conjunction|
         conjunction.inputs =
-          @components
+          @blocks
           .values
-          .select { |component| component.outputs.include?(conjunction.name) }
+          .select { |block| block.outputs.include?(conjunction.name) }
           .map(&:name)
       end
   end
