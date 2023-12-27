@@ -42,6 +42,8 @@ class Day24 < Day
   end
 
   def result
+    return result_part_two if enable_part_two
+
     hailstones.combination(2).count do |hailstone_a, hailstone_b|
       intersection = hailstone_a.intersection(hailstone_b)
       time_a = hailstone_a.time_to_reach(intersection)
@@ -53,9 +55,52 @@ class Day24 < Day
     end
   end
 
+  def result_part_two
+    x, y, = gaussian_elimination(matrix(:x, :y)).map(&:last)
+    z, = gaussian_elimination(matrix(:z, :y)).map(&:last)
+
+    [x, y, z].sum.to_i
+  end
+
   private
 
   def hailstones
     @hailstones ||= @input.map { |line| Hailstone.new(line) }
+  end
+
+  def matrix(coordinate_a, coordinate_b)
+    matrix = hailstones.map do |hailstone|
+      [
+        -hailstone.velocity[coordinate_b],
+        hailstone.velocity[coordinate_a],
+        hailstone.position[coordinate_b],
+        -hailstone.position[coordinate_a],
+        (hailstone.position[coordinate_b] * hailstone.velocity[coordinate_a]) -
+          (hailstone.position[coordinate_a] * hailstone.velocity[coordinate_b])
+      ]
+    end
+
+    matrix.take(4).map { |row| row.zip(matrix[-1]).map { |a, b| (a - b).to_r } }
+  end
+
+  def gaussian_elimination(matrix)
+    (0...matrix.size).each do |row|
+      pivot = matrix[row][row]
+      matrix[row].map! { |value| value / pivot }
+
+      ((row + 1)...matrix.size).each do |column|
+        pivot = matrix[column][row]
+        matrix[column].map!.with_index { |value, index| value - (pivot * matrix[row][index]) }
+      end
+    end
+
+    (matrix.size - 1).downto(0) do |row|
+      (0...row).each do |column|
+        pivot = matrix[column][row]
+        matrix[column].map!.with_index { |value, index| value - (pivot * matrix[row][index]) }
+      end
+    end
+
+    matrix
   end
 end

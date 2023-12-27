@@ -24,7 +24,7 @@ describe Day24 do
   describe 'part two' do
     subject { Day24.new(input, enable_part_two: true) }
 
-    let(:result) { 2 }
+    let(:result) { 47 }
 
     # it_returns_correct_result
   end
